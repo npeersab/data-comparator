@@ -1,0 +1,22 @@
+services:
+  data-comparator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: data-comparator:latest
+    container_name: data-comparator
+    ports:
+      - "8000:8000"
+    # Keep saved connections + encryption key across restarts.
+    volumes:
+      - data-comparator-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/api/dialects').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  data-comparator-data:

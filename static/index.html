@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Comparator</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><ellipse cx='12' cy='5' r='3'><path d='M5 7v10a3 3 0 0 0 6 0V7'><path d='M19 7v10a3 3 0 0 1-6 0V7'></svg>" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap='round' stroke-linejoin="round"><ellipse cx="12" cy="5" r="3"/><path d="M5 7v10a3 3 0 0 0 6 0V7"/><path d="M19 7v10a3 3 0 0 1-6 0V7"/></svg>
+        </span>
+        <span class="brand-name">Data Comparator</span>
+      </div>
+      <nav class="nav" aria-label="Primary">
+        <a class="nav-link" href="/">Compare</a>
+        <a class="nav-link" href="/admin">Admin</a>
+      </nav>
+      <button id="theme-toggle" type="button" class="icon-btn" aria-label="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>Compare databases</h1>
+      <p>Pick a saved connection for each side and diff the query results.</p>
+    </div>
+
+    <section class="panels">
+      <!-- Source -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Source</h2>
+        </div>
+        <div class="card-content">
+          <div class="fields">
+            <div class="field field-full">
+              <label class="label" for="s-saved">Saved connection</label>
+              <select id="s-saved" class="saved-select"></select>
+            </div>
+            <div class="field field-full">
+              <label class="label" for="s-query">Query</label>
+              <textarea id="s-query" class="query" placeholder="SELECT ..."></textarea>
+            </div>
+            <div class="field field-full">
+              <label class="label" for="s-info">Connection details</label>
+              <div id="s-info" class="conn-info">No connection selected.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Target -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Target</h2>
+        </div>
+        <div class="card-content">
+          <div class="fields">
+            <div class="field field-full">
+              <label class="label" for="t-saved">Saved connection</label>
+              <select id="t-saved" class="saved-select"></select>
+            </div>
+            <div class="field field-full">
+              <label class="label" for="t-query">Query</label>
+              <textarea id="t-query" class="query" placeholder="SELECT ..."></textarea>
+            </div>
+            <div class="field field-full">
+              <label class="label" for="t-info">Connection details</label>
+              <div id="t-info" class="conn-info">No connection selected.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls">
+      <div class="field">
+        <label class="label" for="max-mismatch">Max mismatches to collect</label>
+        <input id="max-mismatch" type="number" value="100" min="1" />
+      </div>
+      <div class="buttons" style="display:flex; gap:0.5rem;">
+        <button id="run" type="button" class="btn btn-default">Run comparison</button>
+        <button id="reset" type="button" class="btn btn-outline" disabled>Reset</button>
+      </div>
+    </section>
+
+    <div id="status" class="status" hidden></div>
+
+    <section id="results" class="results" hidden>
+      <div class="results-head">
+        <h2>Results</h2>
+        <div class="exports">
+          <button id="export-csv" type="button" class="btn btn-outline btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            Export CSV
+          </button>
+          <button id="export-json" type="button" class="btn btn-outline btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            Export JSON
+          </button>
+        </div>
+      </div>
+      <div id="counts" class="counts"></div>
+      <div class="table-wrap">
+        <table id="mismatch-table" class="table">
+          <thead>
+            <tr><th>Side</th><th>Values</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

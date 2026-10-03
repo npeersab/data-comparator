@@ -1,0 +1,107 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]: Data Comparator
+      - button "Toggle theme" [ref=e10] [cursor=pointer]
+  - main [ref=e13]:
+    - generic [ref=e14]:
+      - heading "Compare databases" [level=1] [ref=e15]
+      - paragraph [ref=e16]: Connect two databases, run a query on each, and diff the rows.
+    - generic [ref=e17]:
+      - generic [ref=e18]:
+        - heading "Source" [level=2] [ref=e20]
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e23]:
+              - generic [ref=e24]: Dialect
+              - combobox "Dialect" [ref=e25]:
+                - option "mariadb"
+                - option "mysql"
+                - option "postgres"
+                - option "postgresql" [selected]
+                - option "sqlite"
+            - generic [ref=e26]:
+              - generic [ref=e27]: Host
+              - textbox "Host" [ref=e28]: localhost
+            - generic [ref=e29]:
+              - generic [ref=e30]: Port
+              - spinbutton "Port" [ref=e31]: "5432"
+            - generic [ref=e32]:
+              - generic [ref=e33]: Database
+              - textbox "Database" [ref=e34]:
+                - /placeholder: my_db
+            - generic [ref=e35]:
+              - generic [ref=e36]: Username
+              - textbox "Username" [ref=e37]:
+                - /placeholder: (optional)
+            - generic [ref=e38]:
+              - generic [ref=e39]: Password
+              - textbox "Password" [ref=e40]:
+                - /placeholder: (optional)
+            - generic [ref=e41]:
+              - generic [ref=e42]: Query
+              - textbox "Query" [ref=e43]:
+                - /placeholder: SELECT id, name FROM users
+          - generic [ref=e44]:
+            - generic [ref=e45]:
+              - generic [ref=e46]: Saved connections
+              - generic [ref=e50]:
+                - combobox "Load a saved connection" [ref=e51]:
+                  - option "(no saved connections)" [selected]
+                - button "Load" [ref=e52] [cursor=pointer]
+            - generic [ref=e53]:
+              - textbox "Name to save as" [ref=e54]
+              - button "Save current" [ref=e55] [cursor=pointer]
+              - button "Delete" [disabled] [ref=e56]
+      - generic [ref=e57]:
+        - heading "Target" [level=2] [ref=e59]
+        - generic [ref=e60]:
+          - generic [ref=e61]:
+            - generic [ref=e62]:
+              - generic [ref=e63]: Dialect
+              - combobox "Dialect" [ref=e64]:
+                - option "mariadb"
+                - option "mysql" [selected]
+                - option "postgres"
+                - option "postgresql"
+                - option "sqlite"
+            - generic [ref=e65]:
+              - generic [ref=e66]: Host
+              - textbox "Host" [ref=e67]: localhost
+            - generic [ref=e68]:
+              - generic [ref=e69]: Port
+              - spinbutton "Port" [ref=e70]: "3306"
+            - generic [ref=e71]:
+              - generic [ref=e72]: Database
+              - textbox "Database" [ref=e73]:
+                - /placeholder: my_db
+            - generic [ref=e74]:
+              - generic [ref=e75]: Username
+              - textbox "Username" [ref=e76]:
+                - /placeholder: (optional)
+            - generic [ref=e77]:
+              - generic [ref=e78]: Password
+              - textbox "Password" [ref=e79]:
+                - /placeholder: (optional)
+            - generic [ref=e80]:
+              - generic [ref=e81]: Query
+              - textbox "Query" [ref=e82]:
+                - /placeholder: SELECT id, name FROM users
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - generic [ref=e85]: Saved connections
+              - generic [ref=e89]:
+                - combobox "Load a saved connection" [ref=e90]:
+                  - option "(no saved connections)" [selected]
+                - button "Load" [ref=e91] [cursor=pointer]
+            - generic [ref=e92]:
+              - textbox "Name to save as" [ref=e93]
+              - button "Save current" [ref=e94] [cursor=pointer]
+              - button "Delete" [disabled] [ref=e95]
+    - generic [ref=e96]:
+      - generic [ref=e97]:
+        - generic [ref=e98]: Max mismatches to collect
+        - spinbutton "Max mismatches to collect" [ref=e99]: "100"
+      - generic [ref=e100]:
+        - button "Run comparison" [ref=e101] [cursor=pointer]
+        - button "Reset" [disabled] [ref=e102]

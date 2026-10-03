@@ -1,0 +1,69 @@
+- generic [active] [ref=f9e1]:
+  - banner [ref=f9e2]:
+    - generic [ref=f9e3]:
+      - generic [ref=f9e4]: Data Comparator
+      - navigation "Primary" [ref=f9e10]:
+        - link "Compare" [ref=f9e11] [cursor=pointer]:
+          - /url: /
+        - link "Admin" [ref=f9e12] [cursor=pointer]:
+          - /url: /admin
+      - button "Toggle theme" [ref=f9e13] [cursor=pointer]
+  - main [ref=f9e16]:
+    - generic [ref=f9e17]:
+      - heading "Manage connections" [level=1] [ref=f9e18]
+      - paragraph [ref=f9e19]: Create and edit the saved connections the compare page can use. Passwords are encrypted at rest.
+    - generic [ref=f9e20]:
+      - heading "New connection" [level=2] [ref=f9e22]
+      - generic [ref=f9e24]:
+        - generic [ref=f9e25]:
+          - generic [ref=f9e26]: Name *
+          - textbox "Name *" [ref=f9e27]:
+            - /placeholder: prod-orders
+        - generic [ref=f9e28]:
+          - generic [ref=f9e29]: Dialect
+          - combobox "Dialect" [ref=f9e30]:
+            - option "mariadb"
+            - option "mysql"
+            - option "postgres"
+            - option "postgresql" [selected]
+            - option "sqlite"
+        - generic [ref=f9e31]:
+          - generic [ref=f9e32]: Username
+          - textbox "Username" [ref=f9e33]:
+            - /placeholder: (optional)
+        - generic [ref=f9e34]:
+          - generic [ref=f9e35]: Password
+          - textbox "Password" [ref=f9e36]:
+            - /placeholder: (optional)
+        - generic [ref=f9e37]:
+          - generic [ref=f9e38]: Host
+          - textbox "Host" [ref=f9e39]: localhost
+        - generic [ref=f9e40]:
+          - generic [ref=f9e41]: Port
+          - spinbutton "Port" [ref=f9e42]
+        - generic [ref=f9e43]:
+          - generic [ref=f9e44]: Database
+          - textbox "Database" [ref=f9e45]:
+            - /placeholder: my_db (or file path for sqlite)
+        - generic [ref=f9e46]:
+          - button "Save connection" [ref=f9e47] [cursor=pointer]
+          - button "Clear" [ref=f9e48] [cursor=pointer]
+    - generic [ref=f9e49]:
+      - heading "Saved connections" [level=2] [ref=f9e51]
+      - table [ref=f9e54]:
+        - rowgroup [ref=f9e55]:
+          - row [ref=f9e56]:
+            - columnheader "Name" [ref=f9e57]
+            - columnheader "Dialect" [ref=f9e58]
+            - columnheader "Host:Port" [ref=f9e59]
+            - columnheader "Database" [ref=f9e60]
+            - columnheader [ref=f9e61]
+        - rowgroup [ref=f9e62]:
+          - row [ref=f9e63]:
+            - cell "test-a" [ref=f9e64]
+            - cell "sqlite" [ref=f9e65]
+            - cell "localhost" [ref=f9e66]
+            - cell "/tmp/dc_test/updated.db" [ref=f9e67]
+            - cell [ref=f9e68]:
+              - button "Edit" [ref=f9e69] [cursor=pointer]
+              - button "Delete" [ref=f9e70] [cursor=pointer]

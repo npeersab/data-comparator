@@ -1,0 +1,109 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - heading "Data Comparator" [level=1] [ref=e3]
+    - paragraph [ref=e4]: Connect two databases, run a query on each, and diff the rows.
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - heading "Source" [level=2] [ref=e8]
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - text: Dialect
+            - combobox "Dialect" [ref=e11]:
+              - option "mariadb"
+              - option "mssql"
+              - option "mysql"
+              - option "oracle"
+              - option "postgres"
+              - option "postgresql"
+              - option "sqlite" [selected]
+          - generic [ref=e12]:
+            - text: Host
+            - textbox "Host" [disabled] [ref=e13]:
+              - /placeholder: ignored for sqlite
+              - text: localhost
+          - generic [ref=e14]:
+            - text: Port
+            - spinbutton "Port" [disabled] [ref=e15]
+          - generic [ref=e16]:
+            - text: Database
+            - textbox "Database" [ref=e17]:
+              - /placeholder: my_db
+              - text: /tmp/ua.db
+          - generic [ref=e18]:
+            - text: Username
+            - textbox "Username" [ref=e19]:
+              - /placeholder: (optional)
+          - generic [ref=e20]:
+            - text: Password
+            - textbox "Password" [ref=e21]:
+              - /placeholder: (optional)
+        - textbox "SELECT id, name FROM users" [ref=e22]
+      - generic [ref=e23]:
+        - heading "Target" [level=2] [ref=e24]
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - text: Dialect
+            - combobox "Dialect" [ref=e27]:
+              - option "mariadb"
+              - option "mssql"
+              - option "mysql"
+              - option "oracle"
+              - option "postgres"
+              - option "postgresql"
+              - option "sqlite" [selected]
+          - generic [ref=e28]:
+            - text: Host
+            - textbox "Host" [disabled] [ref=e29]:
+              - /placeholder: ignored for sqlite
+              - text: localhost
+          - generic [ref=e30]:
+            - text: Port
+            - spinbutton "Port" [disabled] [ref=e31]
+          - generic [ref=e32]:
+            - text: Database
+            - textbox "Database" [ref=e33]:
+              - /placeholder: my_db
+              - text: /tmp/ub.db
+          - generic [ref=e34]:
+            - text: Username
+            - textbox "Username" [ref=e35]:
+              - /placeholder: (optional)
+          - generic [ref=e36]:
+            - text: Password
+            - textbox "Password" [ref=e37]:
+              - /placeholder: (optional)
+        - textbox "SELECT id, name FROM users" [ref=e38]
+    - generic [ref=e39]:
+      - generic [ref=e40]:
+        - text: Max mismatches to collect
+        - spinbutton "Max mismatches to collect" [ref=e41]: "100"
+      - generic [ref=e42]:
+        - button "Run comparison" [ref=e43] [cursor=pointer]
+        - button "Reset" [ref=e44] [cursor=pointer]
+    - generic [ref=e45]: Done.
+    - generic [ref=e46]:
+      - generic [ref=e47]:
+        - heading "Results" [level=2] [ref=e48]
+        - generic [ref=e49]:
+          - button "Export CSV" [ref=e50] [cursor=pointer]
+          - button "Export JSON" [ref=e51] [cursor=pointer]
+      - generic [ref=e52]: "Source scanned: 4 • Target scanned: 4 • Matched: 2 • Source-only mismatches: 2 • Target-only mismatches: 2"
+      - table [ref=e54]:
+        - rowgroup [ref=e55]:
+          - row [ref=e56]:
+            - columnheader "Side" [ref=e57]
+            - columnheader "Values" [ref=e58]
+        - rowgroup [ref=e59]:
+          - row [ref=e60]:
+            - cell "source only" [ref=e61]
+            - cell "2 | bob" [ref=e62]
+          - row [ref=e63]:
+            - cell "source only" [ref=e64]
+            - cell "3 | carol" [ref=e65]
+          - row [ref=e66]:
+            - cell "target only" [ref=e67]
+            - cell "2 | BOB" [ref=e68]
+          - row [ref=e69]:
+            - cell "target only" [ref=e70]
+            - cell "4 | dave" [ref=e71]

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Data Comparator — Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><ellipse cx='12' cy='5' r='3'><path d='M5 7v10a3 3 0 0 0 6 0V7'><path d='M19 7v10a3 3 0 0 1-6 0V7'></svg>" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" r="3"/><path d="M5 7v10a3 3 0 0 0 6 0V7"/><path d="M19 7v10a3 3 0 0 1-6 0V7"/></svg>
+        </span>
+        <span class="brand-name">Data Comparator</span>
+      </div>
+      <nav class="nav" aria-label="Primary">
+        <a class="nav-link" href="/">Compare</a>
+        <a class="nav-link" href="/admin">Admin</a>
+      </nav>
+      <button id="theme-toggle" type="button" class="icon-btn" aria-label="Toggle theme">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="page-head">
+      <h1>Manage connections</h1>
+      <p>Create and edit the saved connections the compare page can use. Passwords are encrypted at rest.</p>
+    </div>
+
+    <section class="card">
+      <div class="card-header">
+        <h2 id="form-title" class="card-title">New connection</h2>
+      </div>
+      <div class="card-content">
+        <form id="conn-form" class="fields">
+          <div class="field">
+            <label class="label" for="f-name">Name *</label>
+            <input id="f-name" type="text" placeholder="prod-orders" required />
+          </div>
+          <div class="field">
+            <label class="label" for="f-dialect">Dialect</label>
+            <select id="f-dialect"></select>
+          </div>
+          <div class="field">
+            <label class="label" for="f-username">Username</label>
+            <input id="f-username" type="text" placeholder="(optional)" />
+          </div>
+          <div class="field">
+            <label class="label" for="f-password">Password</label>
+            <input id="f-password" type="password" placeholder="(optional)" />
+          </div>
+          <div class="field">
+            <label class="label" for="f-host">Host</label>
+            <input id="f-host" type="text" value="localhost" />
+          </div>
+          <div class="field">
+            <label class="label" for="f-port">Port</label>
+            <input id="f-port" type="number" placeholder="5432" />
+          </div>
+          <div class="field field-full">
+            <label class="label" for="f-database">Database</label>
+            <input id="f-database" type="text" placeholder="my_db (or file path for sqlite)" />
+          </div>
+          <div class="buttons">
+            <button id="f-save" type="submit" class="btn btn-default">Save connection</button>
+            <button id="f-clear" type="button" class="btn btn-outline">Clear</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section id="list-section" class="card">
+      <div class="card-header">
+        <h2 class="card-title">Saved connections</h2>
+      </div>
+      <div class="card-content">
+        <div class="table-wrap">
+          <table id="conn-table" class="table">
+            <thead>
+              <tr><th>Name</th><th>Dialect</th><th>Host:Port</th><th>Database</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p id="list-empty" class="muted" hidden>No saved connections yet.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="status" class="status" hidden></div>
+
+  <script src="/static/admin.js"></script>
+</body>
+</html>

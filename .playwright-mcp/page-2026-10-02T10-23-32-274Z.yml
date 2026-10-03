@@ -1,0 +1,95 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - heading "Data Comparator" [level=1] [ref=e3]
+    - paragraph [ref=e4]: Connect two databases, run a query on each, and diff the rows.
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - heading "Source" [level=2] [ref=e8]
+        - generic [ref=e9]:
+          - generic [ref=e10]:
+            - text: Dialect
+            - combobox "Dialect" [ref=e11]:
+              - option "mariadb"
+              - option "mysql"
+              - option "postgres"
+              - option "postgresql" [selected]
+              - option "sqlite"
+          - generic [ref=e12]:
+            - text: Host
+            - textbox "Host" [ref=e13]: localhost
+          - generic [ref=e14]:
+            - text: Port
+            - spinbutton "Port" [ref=e15]: "5432"
+          - generic [ref=e16]:
+            - text: Database
+            - textbox "Database" [ref=e17]:
+              - /placeholder: my_db
+          - generic [ref=e18]:
+            - text: Username
+            - textbox "Username" [ref=e19]:
+              - /placeholder: (optional)
+          - generic [ref=e20]:
+            - text: Password
+            - textbox "Password" [ref=e21]:
+              - /placeholder: (optional)
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]: Saved connections
+            - generic [ref=e25]:
+              - combobox "Load a saved connection" [ref=e26]:
+                - option "(no saved connections)" [selected]
+              - button "Load" [ref=e27] [cursor=pointer]
+          - generic [ref=e28]:
+            - textbox "Name to save as" [ref=e29]
+            - button "Save current" [ref=e30] [cursor=pointer]
+            - button "Delete" [disabled] [ref=e31]
+        - textbox "SELECT id, name FROM users" [ref=e32]
+      - generic [ref=e33]:
+        - heading "Target" [level=2] [ref=e34]
+        - generic [ref=e35]:
+          - generic [ref=e36]:
+            - text: Dialect
+            - combobox "Dialect" [ref=e37]:
+              - option "mariadb"
+              - option "mysql" [selected]
+              - option "postgres"
+              - option "postgresql"
+              - option "sqlite"
+          - generic [ref=e38]:
+            - text: Host
+            - textbox "Host" [ref=e39]: localhost
+          - generic [ref=e40]:
+            - text: Port
+            - spinbutton "Port" [ref=e41]: "3306"
+          - generic [ref=e42]:
+            - text: Database
+            - textbox "Database" [ref=e43]:
+              - /placeholder: my_db
+          - generic [ref=e44]:
+            - text: Username
+            - textbox "Username" [ref=e45]:
+              - /placeholder: (optional)
+          - generic [ref=e46]:
+            - text: Password
+            - textbox "Password" [ref=e47]:
+              - /placeholder: (optional)
+        - generic [ref=e48]:
+          - generic [ref=e49]:
+            - generic [ref=e50]: Saved connections
+            - generic [ref=e51]:
+              - combobox "Load a saved connection" [ref=e52]:
+                - option "(no saved connections)" [selected]
+              - button "Load" [ref=e53] [cursor=pointer]
+          - generic [ref=e54]:
+            - textbox "Name to save as" [ref=e55]
+            - button "Save current" [ref=e56] [cursor=pointer]
+            - button "Delete" [disabled] [ref=e57]
+        - textbox "SELECT id, name FROM users" [ref=e58]
+    - generic [ref=e59]:
+      - generic [ref=e60]:
+        - text: Max mismatches to collect
+        - spinbutton "Max mismatches to collect" [ref=e61]: "100"
+      - generic [ref=e62]:
+        - button "Run comparison" [ref=e63] [cursor=pointer]
+        - button "Reset" [disabled] [ref=e64]

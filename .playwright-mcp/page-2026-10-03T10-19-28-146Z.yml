@@ -1,0 +1,88 @@
+- generic [active] [ref=f8e1]:
+  - banner [ref=f8e2]:
+    - generic [ref=f8e3]:
+      - generic [ref=f8e4]: Data Comparator
+      - navigation "Primary" [ref=f8e10]:
+        - link "Compare" [ref=f8e11] [cursor=pointer]:
+          - /url: /
+        - link "Admin" [ref=f8e12] [cursor=pointer]:
+          - /url: /admin
+      - button "Toggle theme" [ref=f8e13] [cursor=pointer]
+  - main [ref=f8e16]:
+    - generic [ref=f8e17]:
+      - heading "Compare databases" [level=1] [ref=f8e18]
+      - paragraph [ref=f8e19]: Pick a saved connection for each side and diff the query results.
+    - generic [ref=f8e20]:
+      - generic [ref=f8e21]:
+        - heading "Source" [level=2] [ref=f8e23]
+        - generic [ref=f8e25]:
+          - generic [ref=f8e26]:
+            - generic [ref=f8e27]: Saved connection
+            - combobox "Saved connection" [ref=f8e28]:
+              - option "(select a connection)"
+              - option "test-a (sqlite)" [selected]
+          - generic [ref=f8e29]:
+            - generic [ref=f8e30]: Query
+            - textbox "Query" [ref=f8e31]:
+              - /placeholder: SELECT ...
+              - text: SELECT id, val FROM t ORDER BY id
+          - generic [ref=f8e32]:
+            - generic [ref=f8e33]: Connection details
+            - generic [ref=f8e34]:
+              - text: "Dialect:"
+              - generic [ref=f8e60]: sqlite
+              - generic [ref=f8e61]: ·
+              - generic [ref=f8e62]: localhost
+              - generic [ref=f8e63]: "Database: /tmp/dc_test/updated.db"
+      - generic [ref=f8e35]:
+        - heading "Target" [level=2] [ref=f8e37]
+        - generic [ref=f8e39]:
+          - generic [ref=f8e40]:
+            - generic [ref=f8e41]: Saved connection
+            - combobox "Saved connection" [ref=f8e42]:
+              - option "(select a connection)"
+              - option "test-a (sqlite)" [selected]
+          - generic [ref=f8e43]:
+            - generic [ref=f8e44]: Query
+            - textbox "Query" [ref=f8e45]:
+              - /placeholder: SELECT ...
+              - text: SELECT id, val FROM t ORDER BY id
+          - generic [ref=f8e46]:
+            - generic [ref=f8e47]: Connection details
+            - generic [ref=f8e48]:
+              - text: "Dialect:"
+              - generic [ref=f8e64]: sqlite
+              - generic [ref=f8e65]: ·
+              - generic [ref=f8e66]: localhost
+              - generic [ref=f8e67]: "Database: /tmp/dc_test/updated.db"
+    - generic [ref=f8e49]:
+      - generic [ref=f8e50]:
+        - generic [ref=f8e51]: Max mismatches to collect
+        - spinbutton "Max mismatches to collect" [ref=f8e52]: "100"
+      - generic [ref=f8e53]:
+        - button "Run comparison" [ref=f8e54] [cursor=pointer]
+        - button "Reset" [ref=f8e55] [cursor=pointer]
+    - generic [ref=f8e68]: Done.
+    - generic [ref=f8e69]:
+      - generic [ref=f8e70]:
+        - heading "Results" [level=2] [ref=f8e71]
+        - generic [ref=f8e72]:
+          - button "Export CSV" [ref=f8e73] [cursor=pointer]
+          - button "Export JSON" [ref=f8e77] [cursor=pointer]
+      - generic [ref=f8e81]:
+        - text: "Source scanned:"
+        - generic [ref=f8e82]: "3"
+        - text: "• Target scanned:"
+        - generic [ref=f8e83]: "3"
+        - text: "• Matched:"
+        - generic [ref=f8e84]: "3"
+        - text: "• Source-only mismatches:"
+        - generic [ref=f8e85]: "0"
+        - text: "• Target-only mismatches:"
+        - generic [ref=f8e86]: "0"
+      - table [ref=f8e88]:
+        - rowgroup [ref=f8e89]:
+          - row [ref=f8e90]:
+            - columnheader "Side" [ref=f8e91]
+            - columnheader "Values" [ref=f8e92]
+        - rowgroup

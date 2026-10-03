@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+# `sortedlist` is not published on PyPI; a compatible implementation is vendored
+# at app/sortedlist.py (used by app/comparator.py). No install needed.
+psycopg2-binary
+pymysql
+cryptography

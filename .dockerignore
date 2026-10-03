@@ -1,0 +1,42 @@
+# Git / VCS
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Test / dev artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+.playwright-mcp/
+
+# Local runtime data (connections DB + encryption key) — must not enter the image
+data/
+
+# Docs / local files (not needed in the image)
+PLAN.md
+*.md
+!requirements.md
+
+# Images / screenshots
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose*.yml
