@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Data / secrets (SQLite DB + Fernet key created at runtime)
+data/
+*.db
+*.key
+
+# Test / tooling artifacts
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Playwright MCP
+.playwright-mcp/
+
+# OS / editor
+.DS_Store
+*.swp
+.idea/
+.vscode/
