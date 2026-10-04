@@ -394,6 +394,12 @@ select {
 }
 .status.error { color: hsl(var(--destructive)); border-color: hsl(var(--destructive)); }
 .status.success { color: hsl(var(--success)); border-color: hsl(var(--success)); }
+/* Dark-mode error text uses the dim --destructive token (30.6% L), which is
+   unreadable on the dark panel; brighten just the banner here. */
+.dark .status.error {
+  color: hsl(0 62.8% 60%);
+  border-color: hsl(0 62.8% 60% / 0.6);
+}
 /* Connection-test banner inside the edit modal: separate it from the fields above */
 #f-status { margin-top: 0.75rem; }
 
