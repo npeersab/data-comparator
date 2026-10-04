@@ -344,6 +344,7 @@ els.reset.addEventListener("click", () => {
   els.results.hidden = true;
   currentPayload = null;
   clearStatus();
+  els.reset.disabled = true;
 });
 
 refreshConnections();

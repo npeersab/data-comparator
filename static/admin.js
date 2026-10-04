@@ -334,7 +334,7 @@ function refreshDatabases(id) {
         const detail = await r.json().then((j) => j.detail).catch(() => null);
         throw new Error(detail || "Refresh failed");
       }
-      clearStatus();
+      setStatus("Databases refreshed.", "success");
       refreshList();
     })
     .catch((err) => setStatus(err.message || String(err), "error"));
