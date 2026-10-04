@@ -1,23 +1,32 @@
-"""Smoke test: build two SQLite DBs, run the SSE comparison, check mismatches."""
+"""Smoke test: run the SSE comparison against PostgreSQL tables, check mismatches.
+
+Uses a live PostgreSQL server (see test_app.py for the container setup). SQLite
+is intentionally no longer a comparable target.
+"""
 import json
-import os
-import tempfile
 
 from sqlalchemy import create_engine, text
 
 from app.schemas import ConnectionConfig
 from app.compare import compare_events
 
+PG_URL = {"dialect": "postgresql", "host": "localhost", "port": 5432,
+          "username": "tc", "password": "tcpass", "database": "tcdb"}
+PG = "postgresql+psycopg2://tc:tcpass@localhost:5432/tcdb"
 
-def make_db(path, rows):
-    eng = create_engine(f"sqlite:///{path}")
+
+def seed_tables(source_rows, target_rows):
+    eng = create_engine(PG)
     with eng.connect() as c:
-        c.execute(text("DROP TABLE IF EXISTS t"))
-        c.execute(text("CREATE TABLE t (id INTEGER, val TEXT)"))
-        for i, v in rows:
-            c.execute(text("INSERT INTO t VALUES (:i, :v)"), {"i": i, "v": v})
+        c.execute(text("DROP TABLE IF EXISTS t_source"))
+        c.execute(text("DROP TABLE IF EXISTS t_target"))
+        c.execute(text("CREATE TABLE t_source (id INTEGER, val TEXT)"))
+        c.execute(text("CREATE TABLE t_target (id INTEGER, val TEXT)"))
+        for i, v in source_rows:
+            c.execute(text("INSERT INTO t_source VALUES (:i, :v)"), {"i": i, "v": v})
+        for i, v in target_rows:
+            c.execute(text("INSERT INTO t_target VALUES (:i, :v)"), {"i": i, "v": v})
         c.commit()
-    return eng
 
 
 def run_sse(cfg_source, cfg_target, max_mm):
@@ -38,15 +47,10 @@ def error_event(events):
 
 
 def main():
-    tmp = tempfile.mkdtemp()
-    s_path = os.path.join(tmp, "s.db")
-    t_path = os.path.join(tmp, "t.db")
-    make_db(s_path, [(1, "a"), (2, "b"), (3, "c")])
-    make_db(t_path, [(1, "a"), (2, "b"), (4, "d")])
+    src = ConnectionConfig(query="SELECT id, val FROM t_source", **PG_URL)
+    tgt = ConnectionConfig(query="SELECT id, val FROM t_target", **PG_URL)
 
-    src = ConnectionConfig(dialect="sqlite", database=s_path, query="SELECT id, val FROM t")
-    tgt = ConnectionConfig(dialect="sqlite", database=t_path, query="SELECT id, val FROM t")
-
+    seed_tables([(1, "a"), (2, "b"), (3, "c")], [(1, "a"), (2, "b"), (4, "d")])
     result = result_event(run_sse(src, tgt, 100))
     src_mm = sorted(map(tuple, result["source_mismatches"]))
     tgt_mm = sorted(map(tuple, result["target_mismatches"]))
@@ -61,21 +65,24 @@ def main():
     assert r2["truncated"] is True, r2
     print("PASS: truncation flag set when max_mismatch_size reached")
 
-    # NULLs are treated as values (the vendored shim compares by ==, never ordering).
-    make_db(s_path, [(1, None), (2, "b")])
-    make_db(t_path, [(1, None), (2, "b")])
+    # NULLs are treated as values (rows are compared by ==, never ordering).
+    seed_tables([(1, None), (2, "b")], [(1, None), (2, "b")])
     r3 = result_event(run_sse(src, tgt, 10))
     assert r3["source_mismatches"] == [] and r3["target_mismatches"] == [], r3
     print("PASS: NULL rows compared without error")
 
-    # Unsupported dialect -> error event.
-    bad = ConnectionConfig(dialect="nope", database=s_path, query="SELECT 1")
+    # Unsupported dialect -> error event (build_url rejects it before connecting).
+    bad = ConnectionConfig(dialect="nope", database="tcdb", query="SELECT 1")
     err = error_event(run_sse(bad, tgt, 10))
     assert "Unsupported dialect" in err["message"], err
     print("PASS: unsupported dialect reported as error ->", err["message"])
 
     # Bad SQL -> error event.
-    bad_sql = ConnectionConfig(dialect="sqlite", database=s_path, query="SELECT * FROM does_not_exist")
+    bad_sql = ConnectionConfig(
+        dialect="postgresql", host="localhost", port=5432,
+        username="tc", password="tcpass", database="tcdb",
+        query="SELECT * FROM does_not_exist",
+    )
     err2 = error_event(run_sse(bad_sql, tgt, 10))
     assert err2["message"], err2
     print("PASS: bad SQL reported as error ->", err2["message"][:60])

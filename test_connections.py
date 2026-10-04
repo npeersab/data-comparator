@@ -29,7 +29,6 @@ BASE = {
     "password": "s3cr3t-pw",
     "host": "db.internal",
     "port": 5432,
-    "database": "orders",
 }
 
 
@@ -84,13 +83,13 @@ def main():
     print("PASS: full view decrypts password for loading")
 
     # 6. Update by name (idempotent upsert) — same id, password re-encrypted.
-    updated = _payload("prod-orders", port=5433, database="orders_prod")
+    updated = _payload("prod-orders", port=5433)
     r = client.post("/api/connections", json=updated)
     assert r.status_code == 201
     assert r.json()["id"] == conn_id, "updating by name should keep the same id"
     r = client.get(f"/api/connections/{conn_id}")
     assert r.json()["port"] == 5433
-    assert r.json()["database"] == "orders_prod"
+    assert "databases" in r.json()
     print("PASS: upsert by name keeps id and updates fields")
 
     # 7. Duplicate name does not create a second row.
@@ -115,10 +114,18 @@ def main():
     print("PASS: missing ids return 404")
 
     # 11. Compare two saved connections by id (credentials stay server-side).
-    cmp_s = os.path.join(_TMP, "cmp_s.db")
-    cmp_t = os.path.join(_TMP, "cmp_t.db")
-    for path, rows in ((cmp_s, [(1, "a"), (2, "b")]), (cmp_t, [(1, "a"), (3, "c")])):
-        eng = create_engine(f"sqlite:///{path}")
+    # Two PostgreSQL databases, each with its own `t` table.
+    def seed_pg_db(dbname, rows):
+        admin = create_engine(
+            "postgresql+psycopg2://tc:tcpass@localhost:5432/postgres",
+            isolation_level="AUTOCOMMIT",
+        )
+        with admin.connect() as c:
+            c.execute(text(f"DROP DATABASE IF EXISTS {dbname}"))
+            c.execute(text(f"CREATE DATABASE {dbname}"))
+        eng = create_engine(
+            f"postgresql+psycopg2://tc:tcpass@localhost:5432/{dbname}"
+        )
         with eng.connect() as c:
             c.execute(text("DROP TABLE IF EXISTS t"))
             c.execute(text("CREATE TABLE t (id INTEGER, val TEXT)"))
@@ -126,15 +133,18 @@ def main():
                 c.execute(text("INSERT INTO t VALUES (:i, :v)"), {"i": i, "v": v})
             c.commit()
 
+    seed_pg_db("cmpsrc", [(1, "a"), (2, "b")])
+    seed_pg_db("cmptgt", [(1, "a"), (3, "c")])
+
     client.post(
         "/api/connections",
-        json=_payload("cmp-src", dialect="sqlite", host="localhost", port=None,
-                      database=cmp_s),
+        json=_payload("cmp-src", dialect="postgresql", host="localhost",
+                      port=5432, username="tc", password="tcpass"),
     )
     client.post(
         "/api/connections",
-        json=_payload("cmp-tgt", dialect="sqlite", host="localhost", port=None,
-                      database=cmp_t),
+        json=_payload("cmp-tgt", dialect="postgresql", host="localhost",
+                      port=5432, username="tc", password="tcpass"),
     )
 
     def find_id(name):
@@ -146,7 +156,9 @@ def main():
     with client.stream(
         "POST", "/api/compare/saved",
         json={"source_id": src_id, "source_query": "SELECT id, val FROM t",
+              "source_database": "cmpsrc",
               "target_id": tgt_id, "target_query": "SELECT id, val FROM t",
+              "target_database": "cmptgt",
               "max_mismatch_size": 100},
     ) as resp:
         assert resp.status_code == 200
@@ -162,7 +174,9 @@ def main():
     r = client.post(
         "/api/compare/saved",
         json={"source_id": 999999, "source_query": "SELECT 1",
-              "target_id": tgt_id, "target_query": "SELECT 1"},
+              "source_database": "cmpsrc",
+              "target_id": tgt_id, "target_query": "SELECT 1",
+              "target_database": "cmptgt"},
     )
     assert r.status_code == 404, r.status_code
     print("PASS: /api/compare/saved 404s on missing connection")
@@ -176,15 +190,13 @@ def main():
     # rename + change fields via PUT by id — same id, no duplicate row.
     r = client.put(
         f"/api/connections/{edit_id}",
-        json=_payload("renamed", dialect="mysql", host="h2", port=3306,
-                      database="newdb"),
+        json=_payload("renamed", dialect="mysql", host="h2", port=3306),
     )
     assert r.status_code == 200, r.text
     body = r.json()
     assert body["id"] == edit_id
     assert body["name"] == "renamed"
     assert body["dialect"] == "mysql" and body["port"] == 3306
-    assert body["database"] == "newdb"
     assert len(client.get("/api/connections").json()) == before + 1
 
     # password round-trips through re-encryption (stored as ciphertext again).

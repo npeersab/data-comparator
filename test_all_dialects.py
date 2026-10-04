@@ -5,8 +5,6 @@ app's compare_events() at each side and assert the multiset diff is correct.
 Includes a NULL row to verify NULL == NULL (rows are compared by ==, never ordered).
 """
 import json
-import os
-import tempfile
 
 from sqlalchemy import create_engine, text
 
@@ -44,22 +42,6 @@ def result(cfg_src, cfg_tgt, max_mm=100):
         errs = [e.get("error") for e in events if "error" in e]
         raise RuntimeError(f"no result event; events={events}; errors={errs}")
     return res[0]
-
-
-def seed_sqlite(path, rows):
-    if os.path.exists(path):
-        os.remove(path)
-    eng = create_engine(f"sqlite:///{path}")
-    with eng.connect() as c:
-        c.execute(text("DROP TABLE IF EXISTS t_source"))
-        c.execute(text("DROP TABLE IF EXISTS t_target"))
-        c.execute(text("CREATE TABLE t_source (id INTEGER, name TEXT)"))
-        c.execute(text("CREATE TABLE t_target (id INTEGER, name TEXT)"))
-        for i, n in rows:
-            c.execute(text("INSERT INTO t_source VALUES (:i, :n)"), {"i": i, "n": n})
-        for i, n in TGT:
-            c.execute(text("INSERT INTO t_target VALUES (:i, :n)"), {"i": i, "n": n})
-        c.commit()
 
 
 def seed_remote(url, rows):
@@ -100,14 +82,6 @@ def main():
 
     src_q = "SELECT id, name FROM t_source"
     tgt_q = "SELECT id, name FROM t_target"
-
-    # SQLite (built-in, single file with both tables)
-    sdb = tempfile.mktemp(suffix=".db")
-    seed_sqlite(sdb, SRC)
-    results.append(check("sqlite", result(
-        ConnectionConfig(dialect="sqlite", database=sdb, query=src_q),
-        ConnectionConfig(dialect="sqlite", database=sdb, query=tgt_q),
-    )))
 
     # PostgreSQL
     seed_remote("postgresql+psycopg2://tc:tcpass@localhost:5432/tcdb", SRC)

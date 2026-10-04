@@ -1,31 +1,44 @@
-"""Verify the FastAPI app: homepage, dialects endpoint, and SSE streaming."""
+"""Verify the FastAPI app: homepage, dialects endpoint, and SSE streaming.
+
+Uses a live PostgreSQL server (start one, e.g.:
+  docker run -d --name dc-postgres -e POSTGRES_USER=tc -e POSTGRES_PASSWORD=tcpass \
+    -e POSTGRES_DB=tcdb -p 5432:5432 postgres:15
+SQLite is intentionally no longer a comparable target, so all data lives in PG).
+"""
 import json
-import os
-import tempfile
+
 from sqlalchemy import create_engine, text
 
 from starlette.testclient import TestClient
 
 from app.main import app
-from app.schemas import ConnectionConfig
+
+PG = "postgresql+psycopg2://tc:tcpass@localhost:5432/tcdb"
 
 
-def make_db(path, rows):
-    eng = create_engine(f"sqlite:///{path}")
+def seed_tables(source_rows, target_rows):
+    eng = create_engine(PG)
     with eng.connect() as c:
-        c.execute(text("DROP TABLE IF EXISTS t"))
-        c.execute(text("CREATE TABLE t (id INTEGER, val TEXT)"))
-        for i, v in rows:
-            c.execute(text("INSERT INTO t VALUES (:i, :v)"), {"i": i, "v": v})
+        c.execute(text("DROP TABLE IF EXISTS t_source"))
+        c.execute(text("DROP TABLE IF EXISTS t_target"))
+        c.execute(text("CREATE TABLE t_source (id INTEGER, val TEXT)"))
+        c.execute(text("CREATE TABLE t_target (id INTEGER, val TEXT)"))
+        for i, v in source_rows:
+            c.execute(text("INSERT INTO t_source VALUES (:i, :v)"), {"i": i, "v": v})
+        for i, v in target_rows:
+            c.execute(text("INSERT INTO t_target VALUES (:i, :v)"), {"i": i, "v": v})
         c.commit()
 
 
+def cfg(query):
+    return {
+        "dialect": "postgresql", "host": "localhost", "port": 5432,
+        "username": "tc", "password": "tcpass", "database": "tcdb", "query": query,
+    }
+
+
 def main():
-    tmp = tempfile.mkdtemp()
-    sp = os.path.join(tmp, "s.db")
-    tp = os.path.join(tmp, "t.db")
-    make_db(sp, [(1, "a"), (2, "b"), (3, "c")])
-    make_db(tp, [(1, "a"), (2, "b"), (4, "d")])
+    seed_tables([(1, "a"), (2, "b"), (3, "c")], [(1, "a"), (2, "b"), (4, "d")])
 
     client = TestClient(app)
 
@@ -35,16 +48,17 @@ def main():
     assert "Data Comparator" in r.text
     print("PASS: homepage serves HTML")
 
-    # 2. Dialects
+    # 2. Dialects (SQLite must no longer be offered as a target).
     r = client.get("/api/dialects")
     assert r.status_code == 200
     assert "postgresql" in r.json()["dialects"]
+    assert "sqlite" not in r.json()["dialects"]
     print("PASS: /api/dialects ->", sorted(r.json()["dialects"]))
 
     # 3. SSE streaming comparison
     body = {
-        "source": {"dialect": "sqlite", "database": sp, "query": "SELECT id, val FROM t"},
-        "target": {"dialect": "sqlite", "database": tp, "query": "SELECT id, val FROM t"},
+        "source": cfg("SELECT id, val FROM t_source"),
+        "target": cfg("SELECT id, val FROM t_target"),
         "max_mismatch_size": 100,
     }
     events = []
@@ -62,13 +76,10 @@ def main():
     print("PASS: SSE /api/compare/stream ->", json.dumps(result))
 
     # 4. Progress events are emitted during scanning (needs >PROGRESS_EVERY rows).
-    big_s = os.path.join(tmp, "big_s.db")
-    big_t = os.path.join(tmp, "big_t.db")
-    make_db(big_s, [(i, f"v{i}") for i in range(2500)])
-    make_db(big_t, [(i, f"v{i}") for i in range(2500)])
+    seed_tables([(i, f"v{i}") for i in range(2500)], [(i, f"v{i}") for i in range(2500)])
     body2 = {
-        "source": {"dialect": "sqlite", "database": big_s, "query": "SELECT id, val FROM t"},
-        "target": {"dialect": "sqlite", "database": big_t, "query": "SELECT id, val FROM t"},
+        "source": cfg("SELECT id, val FROM t_source"),
+        "target": cfg("SELECT id, val FROM t_target"),
         "max_mismatch_size": 100,
     }
     prog_count = 0
