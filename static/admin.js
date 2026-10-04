@@ -107,7 +107,8 @@ els.form.addEventListener("submit", (e) => {
   e.preventDefault();
   const name = els.name.value.trim();
   if (!name) {
-    setStatus("A name is required.", "error");
+    // Show inside the modal: the page-level status sits behind the backdrop.
+    showStatus("A name is required.", "error");
     els.name.focus();
     return;
   }
@@ -142,7 +143,7 @@ els.form.addEventListener("submit", (e) => {
       closeModal();
       refreshList();
     })
-    .catch((err) => setStatus(err.message || String(err), "error"));
+    .catch((err) => showStatus(err.message || String(err), "error"));
 });
 
 // Show a result banner inside the modal (the opaque backdrop hides the

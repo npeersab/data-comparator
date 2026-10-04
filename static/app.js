@@ -246,6 +246,10 @@ function download(filename, content, mime) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
+  // Force a download: without this, browsers render certain MIME types
+  // (e.g. application/json) inline and navigate to the blob URL instead of
+  // saving the file.
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
 }
