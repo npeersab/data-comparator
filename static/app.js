@@ -11,10 +11,11 @@ let currentPayload = null; // last "result" payload, used for exports
 const els = {
   sSaved: document.getElementById("s-saved"),
   tSaved: document.getElementById("t-saved"),
+  sDatabase: document.getElementById("s-database"),
+  tDatabase: document.getElementById("t-database"),
   sQuery: document.getElementById("s-query"),
   tQuery: document.getElementById("t-query"),
-  sInfo: document.getElementById("s-info"),
-  tInfo: document.getElementById("t-info"),
+
   maxMismatch: document.getElementById("max-mismatch"),
   run: document.getElementById("run"),
   reset: document.getElementById("reset"),
@@ -43,12 +44,15 @@ function refreshConnections() {
       connections = list;
       populateSelect(els.sSaved, list);
       populateSelect(els.tSaved, list);
-      renderInfo(els.sSaved, els.sInfo);
-      renderInfo(els.tSaved, els.tInfo);
+      // No connection chosen yet: show the placeholder, never a blank dropdown.
+      populateDatabaseSelect(els.sDatabase, null);
+      populateDatabaseSelect(els.tDatabase, null);
     })
     .catch(() => {
       populateSelect(els.sSaved, []);
       populateSelect(els.tSaved, []);
+      populateDatabaseSelect(els.sDatabase, null);
+      populateDatabaseSelect(els.tDatabase, null);
     });
 }
 
@@ -68,20 +72,38 @@ function populateSelect(sel, list) {
   });
 }
 
-function renderInfo(sel, infoEl) {
-  const id = sel.value ? Number(sel.value) : null;
-  const conn = id === null ? null : connections.find((c) => c.id === id);
+function findConn(id) {
+  return id ? connections.find((c) => c.id === Number(id)) : null;
+}
+
+// Populate a side's database <select> from the list cached on the connection
+// (enumerated server-side on save / refresh). No extra fetch, no credentials.
+// When `conn` is null (no connection selected yet) it shows a placeholder and
+// no options, so the dropdown is never blank.
+function populateDatabaseSelect(sel, conn) {
+  sel.innerHTML = "";
+  const none = document.createElement("option");
+  none.value = "";
+  none.disabled = true;
+  none.selected = true;
   if (!conn) {
-    infoEl.textContent = "No connection selected.";
-    infoEl.classList.add("muted");
-    return;
+    none.textContent = "(select a connection first)";
+  } else {
+    const dbs = conn.databases || [];
+    none.textContent = dbs.length
+      ? "(select a database)"
+      : "(no databases — check Admin)";
   }
-  infoEl.classList.remove("muted");
-  const hostPort = conn.port ? `${conn.host}:${conn.port}` : conn.host;
-  infoEl.innerHTML =
-    `Dialect: <b>${conn.dialect}</b><span class="muted"> · </span> ` +
-    `<span class="muted">${escapeHtml(hostPort)}</span>` +
-    (conn.database ? `<div class="conn-db"><span class="muted">Database:</span> ${escapeHtml(conn.database)}</div>` : "");
+  // Placeholder first (it is the selected default), then the real options.
+  sel.appendChild(none);
+  if (conn) {
+    (conn.databases || []).forEach((d) => {
+      const opt = document.createElement("option");
+      opt.value = d;
+      opt.textContent = d;
+      sel.appendChild(opt);
+    });
+  }
 }
 
 function escapeHtml(s) {
@@ -91,8 +113,12 @@ function escapeHtml(s) {
     .replace(/>/g, "&gt;");
 }
 
-els.sSaved.addEventListener("change", () => renderInfo(els.sSaved, els.sInfo));
-els.tSaved.addEventListener("change", () => renderInfo(els.tSaved, els.tInfo));
+els.sSaved.addEventListener("change", () => {
+  populateDatabaseSelect(els.sDatabase, findConn(els.sSaved.value));
+});
+els.tSaved.addEventListener("change", () => {
+  populateDatabaseSelect(els.tDatabase, findConn(els.tSaved.value));
+});
 
 // ---- SSE parsing over a fetch ReadableStream ----
 async function streamCompare(body, onEvent, onDone) {
@@ -262,6 +288,12 @@ async function run() {
     setStatus("Enter a SQL query for both Source and Target.", "error");
     return;
   }
+  const sourceDatabase = els.sDatabase.value;
+  const targetDatabase = els.tDatabase.value;
+  if (!sourceDatabase || !targetDatabase) {
+    setStatus("Select a database for both Source and Target.", "error");
+    return;
+  }
 
   els.run.disabled = true;
   els.results.hidden = true;
@@ -272,8 +304,10 @@ async function run() {
   const body = {
     source_id: sourceId,
     source_query: sourceQuery,
+    source_database: sourceDatabase,
     target_id: targetId,
     target_query: targetQuery,
+    target_database: targetDatabase,
     max_mismatch_size: Number(els.maxMismatch.value),
   };
 

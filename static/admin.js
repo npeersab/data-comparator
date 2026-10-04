@@ -5,6 +5,8 @@
 
 let connections = []; // cache of public saved connections
 let editingId = null; // id being edited, or null for a new connection
+let pendingDeleteId = null; // id awaiting delete confirmation
+let pendingDeleteName = null; // name of the connection awaiting deletion
 
 // ---- DOM refs ----
 const els = {
@@ -15,13 +17,21 @@ const els = {
   password: document.getElementById("f-password"),
   host: document.getElementById("f-host"),
   port: document.getElementById("f-port"),
-  database: document.getElementById("f-database"),
   save: document.getElementById("f-save"),
   clear: document.getElementById("f-clear"),
-  title: document.getElementById("form-title"),
+  title: document.getElementById("modal-title"),
+  modal: document.getElementById("conn-modal"),
+  panel: document.getElementById("modal-panel"),
+  close: document.getElementById("modal-close"),
   tbody: document.querySelector("#conn-table tbody"),
   empty: document.getElementById("list-empty"),
   status: document.getElementById("status"),
+  confirmModal: document.getElementById("confirm-modal"),
+  confirmPanel: document.getElementById("confirm-panel"),
+  confirmMessage: document.getElementById("confirm-message"),
+  confirmClose: document.getElementById("confirm-close"),
+  confirmCancel: document.getElementById("confirm-cancel"),
+  confirmDelete: document.getElementById("confirm-delete"),
 };
 
 function setStatus(msg, kind = "info") {
@@ -35,7 +45,7 @@ function clearStatus() {
 
 // ---- Dialect select ----
 function initDialectSelect() {
-  fetch("/api/dialects")
+  return fetch("/api/dialects")
     .then((r) => r.json())
     .then((data) => {
       els.dialect.innerHTML = "";
@@ -48,30 +58,48 @@ function initDialectSelect() {
       els.dialect.value = data.dialects.includes("postgresql")
         ? "postgresql"
         : data.dialects[0];
+      return data;
     });
 }
 
-// ---- Form ----
-function resetForm() {
-  editingId = null;
-  els.title.textContent = "New connection";
-  els.save.textContent = "Save connection";
+// ---- Modal ----
+let lastFocused = null;
+
+function openModal(mode, cfg) {
+  editingId = mode === "edit" ? cfg.id : null;
+  els.title.textContent = mode === "edit" ? "Edit connection" : "New connection";
+  els.save.textContent = mode === "edit" ? "Update connection" : "Save connection";
   els.form.reset();
   els.host.value = "localhost";
-  initDialectSelect();
+  lastFocused = document.activeElement;
+
+  // Populate dialects first, then apply field values so the edit dialect
+  // selection lands on a real option.
+  initDialectSelect().then(() => {
+    if (mode === "edit") {
+      els.name.value = cfg.name;
+      els.dialect.value = cfg.dialect;
+      els.username.value = cfg.username || "";
+      els.password.value = cfg.password || "";
+      els.host.value = cfg.host || "localhost";
+      els.port.value = cfg.port ?? "";
+    }
+  });
+
+  els.modal.hidden = false;
+  document.body.style.overflow = "hidden";
+  els.close.focus();
+}
+
+function closeModal() {
+  els.modal.hidden = true;
+  editingId = null;
+  document.body.style.overflow = "";
+  if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
 }
 
 function fillForm(cfg) {
-  editingId = cfg.id;
-  els.title.textContent = "Edit connection";
-  els.save.textContent = "Update connection";
-  els.name.value = cfg.name;
-  els.dialect.value = cfg.dialect;
-  els.username.value = cfg.username || "";
-  els.password.value = cfg.password || "";
-  els.host.value = cfg.host || "localhost";
-  els.port.value = cfg.port ?? "";
-  els.database.value = cfg.database || "";
+  openModal("edit", cfg);
 }
 
 els.form.addEventListener("submit", (e) => {
@@ -90,7 +118,6 @@ els.form.addEventListener("submit", (e) => {
     password: els.password.value,
     host: els.host.value,
     port: portText ? Number(portText) : null,
-    database: els.database.value,
   };
   // Create goes through the upsert endpoint; an edit targets the preset by id,
   // so renaming a connection in place does not create a duplicate row.
@@ -111,13 +138,39 @@ els.form.addEventListener("submit", (e) => {
         throw new Error(detail || "Save failed");
       }
       clearStatus();
-      resetForm();
+      closeModal();
       refreshList();
     })
     .catch((err) => setStatus(err.message || String(err), "error"));
 });
 
-els.clear.addEventListener("click", resetForm);
+els.clear.addEventListener("click", closeModal);
+
+// ---- Modal wiring ----
+document
+  .getElementById("add-connection")
+  .addEventListener("click", () => openModal("new"));
+els.close.addEventListener("click", closeModal);
+// Clicking the backdrop (outside the panel) closes the modal.
+els.modal.addEventListener("click", (e) => {
+  if (!els.panel.contains(e.target)) closeModal();
+});
+// Escape closes either modal.
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    if (!els.modal.hidden) closeModal();
+    if (!els.confirmModal.hidden) cancelDelete();
+  }
+});
+
+// Delete confirmation modal wiring.
+els.confirmClose.addEventListener("click", cancelDelete);
+els.confirmCancel.addEventListener("click", cancelDelete);
+els.confirmDelete.addEventListener("click", performDelete);
+// Clicking the backdrop (outside the panel) cancels.
+els.confirmModal.addEventListener("click", (e) => {
+  if (!els.confirmPanel.contains(e.target)) cancelDelete();
+});
 
 // ---- List ----
 function refreshList() {
@@ -148,7 +201,9 @@ function renderList(list) {
     tr.appendChild(tdHost);
 
     const tdDb = document.createElement("td");
-    tdDb.textContent = c.database;
+    const dbs = c.databases || [];
+    tdDb.textContent = dbs.length ? String(dbs.length) : "—";
+    tdDb.title = dbs.length ? dbs.join(", ") : "Not enumerated yet";
     tr.appendChild(tdDb);
 
     const tdActions = document.createElement("td");
@@ -160,13 +215,20 @@ function renderList(list) {
     editBtn.textContent = "Edit";
     editBtn.addEventListener("click", () => loadForEdit(c.id));
 
+    const refreshBtn = document.createElement("button");
+    refreshBtn.type = "button";
+    refreshBtn.className = "btn btn-outline btn-sm";
+    refreshBtn.textContent = "Refresh Databases";
+    refreshBtn.addEventListener("click", () => refreshDatabases(c.id));
+
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.className = "btn btn-destructive btn-sm";
     delBtn.textContent = "Delete";
-    delBtn.addEventListener("click", () => deleteConnection(c.id));
+    delBtn.addEventListener("click", () => confirmDelete(c.id, c.name));
 
     tdActions.appendChild(editBtn);
+    tdActions.appendChild(refreshBtn);
     tdActions.appendChild(delBtn);
     tr.appendChild(tdActions);
     els.tbody.appendChild(tr);
@@ -182,16 +244,52 @@ function loadForEdit(id) {
     .then((cfg) => {
       clearStatus();
       fillForm(cfg);
-      window.scrollTo({ top: 0, behavior: "smooth" });
     })
     .catch((err) => setStatus(err.message || String(err), "error"));
 }
 
-function deleteConnection(id) {
+function confirmDelete(id, name) {
+  pendingDeleteId = id;
+  pendingDeleteName = name;
+  const label = name ? `"${name}"` : "this connection";
+  els.confirmMessage.textContent =
+    `Are you sure you want to delete ${label}? This removes the saved connection and cannot be undone.`;
+  els.confirmModal.hidden = false;
+  document.body.style.overflow = "hidden";
+  lastFocused = document.activeElement;
+  els.confirmDelete.focus();
+}
+
+function cancelDelete() {
+  pendingDeleteId = null;
+  pendingDeleteName = null;
+  els.confirmModal.hidden = true;
+  document.body.style.overflow = "";
+  if (lastFocused && typeof lastFocused.focus === "function") lastFocused.focus();
+}
+
+function performDelete() {
+  const id = pendingDeleteId;
+  cancelDelete();
+  if (id == null) return;
   fetch(`/api/connections/${id}`, { method: "DELETE" })
     .then((r) => {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      if (editingId === id) resetForm();
+      if (editingId === id) closeModal();
+      clearStatus();
+      refreshList();
+    })
+    .catch((err) => setStatus(err.message || String(err), "error"));
+}
+
+// Re-enumerate a preset's databases from the server and store the list.
+function refreshDatabases(id) {
+  fetch(`/api/connections/${id}/databases/refresh`, { method: "POST" })
+    .then(async (r) => {
+      if (!r.ok) {
+        const detail = await r.json().then((j) => j.detail).catch(() => null);
+        throw new Error(detail || "Refresh failed");
+      }
       clearStatus();
       refreshList();
     })

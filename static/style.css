@@ -115,7 +115,13 @@ body {
   margin: 0 auto;
   padding: 2rem 1rem 3rem;
 }
-.page-head { margin-top: 1.5rem; }
+.page-head {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
 .page-head h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.025em; margin: 0; }
 .page-head p { margin: 0.25rem 0 0; color: hsl(var(--muted-foreground)); font-size: 0.875rem; }
 
@@ -255,12 +261,91 @@ select {
 .btn-default:hover:not(:disabled) { background-color: hsl(var(--primary) / 0.9); }
 .btn-secondary { background-color: hsl(var(--secondary)); color: hsl(var(--secondary-foreground)); }
 .btn-secondary:hover:not(:disabled) { background-color: hsl(var(--secondary) / 0.8); }
-.btn-outline { background-color: hsl(var(--background)); color: hsl(var(--foreground)); }
-.btn-outline:hover:not(:disabled) { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
+.btn-outline { background-color: hsl(var(--background)); color: hsl(var(--foreground)); border-color: hsl(var(--border)); }
+.btn-outline:hover:not(:disabled) { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); border-color: hsl(var(--accent)); }
 .btn-ghost { background-color: transparent; color: hsl(var(--foreground)); }
 .btn-ghost:hover:not(:disabled) { background-color: hsl(var(--accent)); color: hsl(var(--accent-foreground)); }
 .btn-destructive { background-color: hsl(var(--destructive)); color: hsl(var(--destructive-foreground)); }
 .btn-destructive:hover:not(:disabled) { background-color: hsl(var(--destructive) / 0.9); }
+
+/* ---- Modal (shadcn-dialog style) ---- */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.modal[hidden] { display: none; }
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background-color: rgb(0 0 0 / 0.6);
+  animation: modal-in 0.12s ease-out;
+}
+.modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 32rem;
+  max-height: calc(100vh - 2rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  animation: modal-in 0.12s ease-out;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 1.5rem 1.5rem 0 1.5rem;
+}
+.modal-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+  margin: 0;
+}
+.modal-body { padding: 1.25rem 1.5rem; overflow-y: auto; }
+.modal-form .fields { gap: 0.875rem 1rem; }
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem 1.5rem;
+  border-top: 1px solid hsl(var(--border));
+}
+.modal-footer .btn { min-width: 8rem; }
+
+.confirm-icon {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0 0.75rem;
+}
+.confirm-icon svg {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: hsl(var(--destructive));
+}
+.confirm-message {
+  margin: 0;
+  text-align: center;
+  color: hsl(var(--muted-foreground));
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
 /* ---- Badge (shadcn) ---- */
 .badge {
@@ -399,20 +484,7 @@ select {
 /* ---- Muted text ---- */
 .muted { color: hsl(var(--muted-foreground)); }
 
-/* ---- Connection info (compare page) ---- */
-.conn-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  min-height: 2.5rem;
-  padding: 0.75rem 0.875rem;
-  border-radius: var(--radius);
-  border: 1px solid hsl(var(--border));
-  background-color: hsl(var(--background));
-  font-size: 0.875rem;
-  color: hsl(var(--foreground));
-}
-.conn-info.muted { color: hsl(var(--muted-foreground)); }
+
 .conn-query {
   font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.8125rem;

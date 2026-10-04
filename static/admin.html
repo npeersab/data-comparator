@@ -29,50 +29,16 @@
 
   <main class="container">
     <div class="page-head">
-      <h1>Manage connections</h1>
-      <p>Create and edit the saved connections the compare page can use. Passwords are encrypted at rest.</p>
+      <div>
+        <h1>Manage connections</h1>
+        <p>Create and edit the saved connections the compare page can use. Passwords are encrypted at rest.</p>
+      </div>
+      <button id="add-connection" type="button" class="btn btn-default">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Add connection
+      </button>
     </div>
 
-    <section class="card">
-      <div class="card-header">
-        <h2 id="form-title" class="card-title">New connection</h2>
-      </div>
-      <div class="card-content">
-        <form id="conn-form" class="fields">
-          <div class="field">
-            <label class="label" for="f-name">Name *</label>
-            <input id="f-name" type="text" placeholder="prod-orders" required />
-          </div>
-          <div class="field">
-            <label class="label" for="f-dialect">Dialect</label>
-            <select id="f-dialect"></select>
-          </div>
-          <div class="field">
-            <label class="label" for="f-username">Username</label>
-            <input id="f-username" type="text" placeholder="(optional)" />
-          </div>
-          <div class="field">
-            <label class="label" for="f-password">Password</label>
-            <input id="f-password" type="password" placeholder="(optional)" />
-          </div>
-          <div class="field">
-            <label class="label" for="f-host">Host</label>
-            <input id="f-host" type="text" value="localhost" />
-          </div>
-          <div class="field">
-            <label class="label" for="f-port">Port</label>
-            <input id="f-port" type="number" placeholder="5432" />
-          </div>
-          <div class="field field-full">
-            <label class="label" for="f-database">Database</label>
-            <input id="f-database" type="text" placeholder="my_db (or file path for sqlite)" />
-          </div>
-          <div class="buttons">
-            <button id="f-save" type="submit" class="btn btn-default">Save connection</button>
-            <button id="f-clear" type="button" class="btn btn-outline">Clear</button>
-          </div>
-        </form>
-      </div>
     </section>
 
     <section id="list-section" class="card">
@@ -83,7 +49,7 @@
         <div class="table-wrap">
           <table id="conn-table" class="table">
             <thead>
-              <tr><th>Name</th><th>Dialect</th><th>Host:Port</th><th>Database</th><th></th></tr>
+              <tr><th>Name</th><th>Dialect</th><th>Host:Port</th><th>Databases</th><th></th></tr>
             </thead>
             <tbody></tbody>
           </table>
@@ -94,6 +60,100 @@
   </main>
 
   <div id="status" class="status" hidden></div>
+
+  <!-- Add / edit connection modal -->
+  <div id="conn-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-modal-close aria-hidden="true"></div>
+    <div
+      id="modal-panel"
+      class="modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      tabindex="-1"
+    >
+      <div class="modal-header">
+        <h2 id="modal-title" class="modal-title">New connection</h2>
+        <button
+          type="button"
+          id="modal-close"
+          class="icon-btn btn-icon modal-close"
+          aria-label="Close dialog"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <form id="conn-form" class="modal-form">
+        <div class="modal-body">
+          <div class="fields">
+            <div class="field">
+              <label class="label" for="f-name">Name *</label>
+              <input id="f-name" type="text" placeholder="prod-orders" required />
+            </div>
+            <div class="field">
+              <label class="label" for="f-dialect">Dialect</label>
+              <select id="f-dialect"></select>
+            </div>
+            <div class="field">
+              <label class="label" for="f-username">Username</label>
+              <input id="f-username" type="text" placeholder="(optional)" />
+            </div>
+            <div class="field">
+              <label class="label" for="f-password">Password</label>
+              <input id="f-password" type="password" placeholder="(optional)" />
+            </div>
+            <div class="field">
+              <label class="label" for="f-host">Host</label>
+              <input id="f-host" type="text" value="localhost" />
+            </div>
+            <div class="field">
+              <label class="label" for="f-port">Port</label>
+              <input id="f-port" type="number" placeholder="5432" />
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="f-clear" type="button" class="btn btn-outline">Clear</button>
+          <button id="f-save" type="submit" class="btn btn-default">Save connection</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Delete confirmation modal -->
+  <div id="confirm-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-modal-close aria-hidden="true"></div>
+    <div
+      id="confirm-panel"
+      class="modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="confirm-title"
+      tabindex="-1"
+    >
+      <div class="modal-header">
+        <h2 id="confirm-title" class="modal-title">Delete connection</h2>
+        <button
+          type="button"
+          id="confirm-close"
+          class="icon-btn btn-icon modal-close"
+          aria-label="Close dialog"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="confirm-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        </div>
+        <p id="confirm-message" class="confirm-message"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="confirm-cancel" type="button" class="btn btn-outline">Cancel</button>
+        <button id="confirm-delete" type="button" class="btn btn-destructive">Delete</button>
+      </div>
+    </div>
+  </div>
 
   <script src="/static/admin.js"></script>
 </body>
