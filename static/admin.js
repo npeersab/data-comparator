@@ -18,6 +18,8 @@ const els = {
   host: document.getElementById("f-host"),
   port: document.getElementById("f-port"),
   save: document.getElementById("f-save"),
+  test: document.getElementById("f-test"),
+  modalStatus: document.getElementById("f-status"),
   clear: document.getElementById("f-clear"),
   title: document.getElementById("modal-title"),
   modal: document.getElementById("conn-modal"),
@@ -145,6 +147,50 @@ els.form.addEventListener("submit", (e) => {
 });
 
 els.clear.addEventListener("click", closeModal);
+
+// Show a result banner inside the modal (the opaque backdrop hides the
+// page-level status). kind is "success" or "error".
+function showStatus(msg, kind) {
+  els.modalStatus.hidden = false;
+  els.modalStatus.className = `status ${kind}`;
+  els.modalStatus.textContent = msg;
+}
+function clearStatus() {
+  els.modalStatus.hidden = true;
+  els.modalStatus.className = "status";
+}
+
+// Validate the live form fields against the server without saving.
+function testConnection() {
+  const portText = els.port.value.trim();
+  const payload = {
+    dialect: els.dialect.value,
+    username: els.username.value,
+    password: els.password.value,
+    host: els.host.value,
+    port: portText ? Number(portText) : null,
+  };
+  els.test.disabled = true;
+  clearStatus();
+  fetch("/api/connections/test", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  })
+    .then(async (r) => {
+      const result = await r
+        .json()
+        .catch(() => ({ ok: false, error: "Request failed" }));
+      if (!result.ok) throw new Error(result.error || "Connection test failed");
+      showStatus("Connection successful.", "success");
+    })
+    .catch((err) => showStatus(err.message || String(err), "error"))
+    .finally(() => {
+      els.test.disabled = false;
+      els.test.focus();
+    });
+}
+els.test.addEventListener("click", testConnection);
 
 // ---- Modal wiring ----
 document

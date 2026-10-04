@@ -19,13 +19,15 @@ from .connections import (
     to_config,
     refresh_databases,
 )
-from .db import SUPPORTED_DIALECTS
+from .db import SUPPORTED_DIALECTS, test_connection
 from .schemas import (
+    ConnectionConfig,
     CompareRequest,
     SavedCompareRequest,
     SavedConnectionIn,
     SavedConnectionOut,
     SavedConnectionFull,
+    TestConnectionIn,
 )
 
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "..", "static")
@@ -95,6 +97,25 @@ async def refresh_connection_databases(conn_id: int):
     if conn is None:
         raise HTTPException(status_code=404, detail="Connection not found")
     return to_public(conn)
+
+
+@app.post("/api/connections/test")
+async def test_connection_endpoint(data: TestConnectionIn):
+    """Attempt a live connection with raw form fields (no stored preset)."""
+    cfg = ConnectionConfig(
+        dialect=data.dialect,
+        username=data.username,
+        password=data.password,
+        host=data.host,
+        port=data.port,
+        database="",
+        query="",
+    )
+    try:
+        test_connection(cfg)
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+    return {"ok": True}
 
 
 @app.delete("/api/connections/{conn_id}")

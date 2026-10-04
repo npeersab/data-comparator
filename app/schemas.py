@@ -58,6 +58,20 @@ class SavedConnectionIn(BaseModel):
     port: int | None = None
 
 
+class TestConnectionIn(BaseModel):
+    """Raw connection fields for a connectivity test. `name` is not needed.
+
+    `password` is plaintext here; it is only used to attempt a connection and is
+    never stored.
+    """
+
+    dialect: str
+    username: str = ""
+    password: str = ""
+    host: str = "localhost"
+    port: int | None = None
+
+
 class SavedConnectionOut(BaseModel):
     """Public view of a saved connection. Never includes the password."""
 

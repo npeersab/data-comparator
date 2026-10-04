@@ -90,6 +90,22 @@ def list_databases(cfg: ConnectionConfig) -> list[str]:
         engine.dispose()
 
 
+def test_connection(cfg: ConnectionConfig) -> None:
+    """Verify the server is reachable and the credentials work.
+
+    Connects to a maintenance target (see :func:`enumeration_url`) and runs a
+    trivial query; raises on any connection or authentication failure. A
+    ``connect_timeout`` bounds the attempt so an unreachable host can't hang.
+    """
+    url = enumeration_url(cfg).set(query={"connect_timeout": "5"})
+    engine = create_engine(url)
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+    finally:
+        engine.dispose()
+
+
 def stream_rows(engine, sql: str, on_row=None):
     """Yield rows from a raw SQL query as tuples, lazily.
 

@@ -221,6 +221,27 @@ def main():
     print("PASS: update by id (PUT) renames + updates fields, rejects collisions ->",
           json.dumps(body))
 
+    # 14. Test-connection endpoint validates raw form fields server-side.
+    good = client.post(
+        "/api/connections/test",
+        json={"dialect": "postgresql", "host": "localhost", "port": 5432,
+              "username": "tc", "password": "tcpass"},
+    )
+    assert good.status_code == 200 and good.json() == {"ok": True}, good.json()
+
+    bad_dialect = client.post("/api/connections/test", json={"dialect": "sqlite"})
+    bd = bad_dialect.json()
+    assert bad_dialect.status_code == 200 and bd["ok"] is False and bd["error"], bd
+
+    bad_creds = client.post(
+        "/api/connections/test",
+        json={"dialect": "postgresql", "host": "localhost", "port": 5432,
+              "username": "tc", "password": "wrong"},
+    )
+    bc = bad_creds.json()
+    assert bc["ok"] is False and bc["error"], bc
+    print("PASS: /api/connections/test reports ok for good creds, error otherwise")
+
     print("\nALL CONNECTION TESTS PASSED")
 
 
