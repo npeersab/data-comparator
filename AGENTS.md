@@ -9,12 +9,16 @@ databases, using one user-supplied SQL query per side. Setup/run is in `README.m
 
 ## Run & verify
 - Run: `uvicorn app.main:app --reload` → http://localhost:8000
-- Test (both need deps from `requirements.txt` installed first):
-  - `python3 smoke_test.py` — end-to-end: two SQLite DBs → SSE comparison → assertions
-  - `python3 test_app.py` — FastAPI TestClient: homepage, dialects, SSE streaming
-  - `python3 test_all_dialects.py` — per-dialect integration test (sqlite,
-    postgresql, mysql, mariadb); needs **live servers** (e.g. `docker run`
-    `postgres:15` and `mariadb:11` mapped to host ports) plus `psycopg2`/`pymysql`.
+- All tests need deps from `requirements.txt` installed first. The comparison
+  tests need a **live PostgreSQL** on localhost (test DBs hardcode
+  `tc/tcpass`, db `tcdb`, e.g. `docker run -d --name dc-postgres -e POSTGRES_USER=tc
+  -e POSTGRES_PASSWORD=tcpass -e POSTGRES_DB=tcdb -p 5432:5432 postgres:15`):
+  - `python3 test_connections.py` — CRUD + Fernet encryption incl. `/api/compare/saved`; the compare steps need live PostgreSQL.
+  - `python3 smoke_test.py` — end-to-end: PostgreSQL → SSE comparison → assertions (also a usage example for `compare.compare_events`).
+  - `python3 test_app.py` — FastAPI TestClient: homepage, dialects, SSE streaming.
+  - `python3 test_all_dialects.py` — per-dialect integration test (postgresql,
+    mysql, mariadb; **no sqlite**); needs **live servers** (e.g. also
+    `docker run` `mariadb:11` mapped to a host port) plus `psycopg2`/`pymysql`.
 
 ## Gotchas (read before editing — easy to get wrong)
 - **`app/comparator.py` is corrected, not verbatim.** Adapted from
@@ -41,6 +45,19 @@ databases, using one user-supplied SQL query per side. Setup/run is in `README.m
   `from app.main import app`, so it runs against a throwaway temp DB. If you add
   a test that exercises the connections endpoints, set these first — otherwise
   the cached engine hits the real `data/connections.db`.
+- **Saved connections no longer store a single `database`.** A preset stores a
+  `databases` **list** that is enumerated from the server on save (and via
+  `POST /api/connections/{id}/databases/refresh`, wired to the Admin "Refresh Databases"
+  button). `refresh_databases()` swallows connection/credential errors and stores
+  `[]` so an unreachable server never breaks saving. The runtime DB is supplied at
+  compare time via `source_database`/`target_database` in `SavedCompareRequest`
+  (see `to_config(conn, query, database)`). The schema migration drops the legacy
+  `database` column and adds `databases` (in `get_engine()` via `_migrate_schema`).
+- **SQLite is no longer a comparable target dialect.** Only `postgresql`,
+  `mysql`, `mariadb` are supported for comparison (db.py `SUPPORTED_DIALECTS`).
+  SQLite is still used only for the internal connections store. Dialect tests need
+  live servers (e.g. `postgres:15` + `mariadb:11` on host ports); `smoke_test.py`
+  and `test_app.py` now target PostgreSQL.
 
 ## How it's wired
 - `app/main.py` — FastAPI app. SSE compare (`POST /api/compare/stream`,
@@ -74,6 +91,20 @@ databases, using one user-supplied SQL query per side. Setup/run is in `README.m
 - The page is driven by element IDs in `index.html`; keep those stable when editing
   the markup. The header toggle flips the `.dark` class on `<html>` and persists to
   localStorage (system default).
+- The **admin page** (`admin.html` + `admin.js`) manages connections in a **modal**:
+  an "Add connection" button opens `#conn-modal`; `openModal("new")` /
+  `openModal("edit", cfg)` drive it, and `closeModal()` closes it. The form lives
+  inside the dialog (`#conn-form`), not inline on the page. Submit routes
+  create→`POST /api/connections`, edit→`PUT /api/connections/{id}` (by id, so a
+  rename doesn't duplicate a preset). Backdrop click (outside `#modal-panel`), the
+  close button, and Escape all close it; focus returns to the trigger and body
+  scroll is locked while open. `initDialectSelect()` returns a promise — set edit
+  field values in its `.then()` so they land after the options load.
+- A **delete confirmation** reuses the same modal system via `#confirm-modal`:
+  `confirmDelete(id, name)` opens it (warning icon + Cancel/Delete footer),
+  `cancelDelete()` closes it, and `performDelete()` issues the `DELETE`. The Delete
+  button's label comes from the row's connection name. All three exit paths
+  (Cancel button, backdrop click, Escape) route through `cancelDelete()`.
 - **Static JS is served without cache-busting.** After editing `static/*.js`, do a
   hard reload (`location.reload(true)`) — the browser may keep serving the old
   `admin.js`/`app.js`, so a change looks like it didn't apply.

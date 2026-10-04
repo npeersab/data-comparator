@@ -9,7 +9,7 @@ see "Notes / limitations").
 ## Features
 - Two pages: a **Compare** page that diffs two saved connections, and an **Admin**
   page (`/admin`) for managing those connections.
-- Connect to two databases (PostgreSQL, MySQL/MariaDB, SQLite).
+- Connect to two databases (PostgreSQL, MySQL/MariaDB).
 - Run an arbitrary SQL query on each side (entered on the Compare page at run time).
 - Streams progress over Server-Side Events (SSE) — works for large result sets.
 - Shows matched / source-only / target-only counts, an on-screen mismatch table,
@@ -25,7 +25,7 @@ pip install -r requirements.txt
 ```
 
 All required drivers are included in `requirements.txt` (`psycopg2-binary` for
-PostgreSQL, `pymysql` for MySQL/MariaDB). SQLite is built into Python.
+PostgreSQL, `pymysql` for MySQL/MariaDB).
 
 ## Run
 ```bash
@@ -40,9 +40,11 @@ The app has two pages, reached from the header nav:
 run. Enter the SQL query for each side; it is executed verbatim.
 1. From each side's dropdown, choose a saved connection (managed on the
    **Admin** page). Its dialect and connection details are shown for reference.
-2. Enter the SQL query for **Source** and **Target**.
-3. Set **Max mismatches to collect** (default 100) and click **Run comparison**.
-4. Watch progress, then review the mismatch table. Use **Export CSV / JSON** for
+2. From the **Database** dropdown that appears, choose the database to query
+   (enumerated from the server when the connection was saved).
+3. Enter the SQL query for **Source** and **Target**.
+4. Set **Max mismatches to collect** (default 100) and click **Run comparison**.
+5. Watch progress, then review the mismatch table. Use **Export CSV / JSON** for
    the full list.
 
 **Admin** (`/admin`) — create, edit, and delete the saved connections the
@@ -54,6 +56,9 @@ Saved presets live on the **Admin** page (`/admin`). The compare page only
 selects from these presets, so it never handles connection credentials directly.
 Create a preset by filling in the connection details under a name you choose.
 The query itself is entered on the Compare page each time, so it is never stored.
+The preset's databases are enumerated from the server when it is saved (and via
+the **Refresh Databases** button on the Admin page); that list is stored with the
+preset and offered as a dropdown on the Compare page.
 
 Saved presets are stored in a small SQLite database on the server, with passwords
 **encrypted at rest** (Fernet). The database lives at `DATA_COMPARATOR_DB`
@@ -96,7 +101,13 @@ encryption key is generated on first run and written to `<data_dir>/encryption.k
   loading into the admin form).
 - `POST /api/connections` — create (or upsert-by-name) a preset. Body:
   `{ "name": "prod-orders", "dialect": "postgresql", "host": "...", "port": 5432,
-    "username": "...", "password": "...", "database": "..." }`.
+    "username": "...", "password": "..." }`. The server enumerates the preset's
+    databases from the server on save (and on the Admin "Refresh Databases" button);
+    that list is stored with the preset and offered as a dropdown on the Compare
+    page — the database is intentionally **not** part of the create body.
+- `POST /api/connections/{id}/databases/refresh` — re-enumerate a preset's
+  databases from the server and store the list (wired to the Admin "Refresh Databases"
+  button). Returns `404` if the id is unknown.
 - `PUT /api/connections/{id}` — update a preset **by id** (used by the admin
   "Update connection" button). Same body as `POST`; updates every field
   including `name` in place, so renaming does not create a duplicate. Returns
@@ -130,21 +141,16 @@ reinstalls, back up that volume (or mount your own directory). To supply your ow
 key instead of an auto-generated one, set `DATA_COMPARATOR_KEY` in the container
 environment — losing the key makes saved passwords unreadable.
 
-**Connecting to databases from the container.** Your database hosts must be
-reachable from inside the container (use a reachable host/IP or a `networks`
-setup in `docker-compose.yml`). For file-based SQLite, bind-mount the folder and
-make sure it is readable/writable by the app user (uid 1000):
-```bash
-docker run -d --name data-comparator \
-  -p 8000:8000 -v "$(pwd)/dbs:/db" data-comparator
-# then use database paths like /db/ua.db in the UI
-```
+**Connecting to databases from the container.** The app connects only to server
+dialects (PostgreSQL, MySQL/MariaDB); there is no file-based SQLite option. Your
+database hosts must be reachable from inside the container (use a reachable
+host/IP or a `networks` setup in `docker-compose.yml`).
 
 ## Testing
 Lightweight test scripts (run with any Python that has the deps installed):
 
 ```bash
-python3 smoke_test.py     # end-to-end: two SQLite DBs -> SSE comparison -> assertions
+python3 smoke_test.py     # end-to-end: PostgreSQL -> SSE comparison -> assertions
 python3 test_app.py       # FastAPI TestClient: homepage, dialects, SSE streaming
 python3 test_connections.py  # CRUD + encryption, incl. /api/compare/saved
 ```

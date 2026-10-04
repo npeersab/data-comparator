@@ -21,7 +21,6 @@ htmlcov/
 data/
 
 # Docs / local files (not needed in the image)
-PLAN.md
 *.md
 !requirements.md
 
