@@ -7,12 +7,14 @@ form. The list endpoint never returns passwords.
 """
 
 import os
+import json
 from datetime import datetime, timezone
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, text
 from sqlalchemy.orm import declarative_base, Session, sessionmaker
 
 from .credentials import encrypt_password, decrypt_password
+from .db import list_databases
 from .schemas import ConnectionConfig, SavedConnectionIn, SavedConnectionOut, SavedConnectionFull
 
 DEFAULT_DATA_DIR = "data"
@@ -36,12 +38,30 @@ class SavedConnection(Base):
     password = Column(String, nullable=False, default="")  # encrypted at rest
     host = Column(String, nullable=False, default="localhost")
     port = Column(Integer, nullable=True)
-    database = Column(String, nullable=False)
+    # JSON-text list of the server's databases, enumerated from the server and
+    # refreshed on save / via the admin "Refresh Databases" button.
+    databases = Column(String, nullable=True)
     created_at = Column(DateTime, nullable=False, default=_utcnow)
     updated_at = Column(DateTime, nullable=False, default=_utcnow, onupdate=_utcnow)
 
 
 _engine = None
+
+
+def _migrate_schema(engine) -> None:
+    """Bring an existing ``connections`` table up to the current schema.
+
+    ``create_all`` does not alter an existing table, so add the new ``databases``
+    column and drop the legacy single-``database`` column in place. A brand-new DB
+    is created with the current model, so this is a no-op there.
+    """
+    with engine.connect() as conn:
+        columns = [row[1] for row in conn.execute(text("PRAGMA table_info(connections)"))]
+        if "database" in columns:
+            conn.execute(text("ALTER TABLE connections DROP COLUMN database"))
+        if "databases" not in columns:
+            conn.execute(text("ALTER TABLE connections ADD COLUMN databases TEXT"))
+        conn.commit()
 
 
 def get_engine():
@@ -57,6 +77,7 @@ def get_engine():
             url, future=True, connect_args={"check_same_thread": False}
         )
         Base.metadata.create_all(_engine)
+        _migrate_schema(_engine)
     return _engine
 
 
@@ -95,7 +116,6 @@ def upsert_connection(data: SavedConnectionIn) -> SavedConnection:
         conn.password = encrypt_password(data.password)
         conn.host = data.host
         conn.port = data.port
-        conn.database = data.database
         session.commit()
         session.refresh(conn)
         return conn
@@ -124,7 +144,6 @@ def update_connection(conn_id: int, data: SavedConnectionIn) -> "SavedConnection
         conn.password = encrypt_password(data.password)
         conn.host = data.host
         conn.port = data.port
-        conn.database = data.database
         session.commit()
         session.refresh(conn)
         return conn
@@ -149,7 +168,7 @@ def to_public(conn: SavedConnection) -> SavedConnectionOut:
         username=conn.username,
         host=conn.host,
         port=conn.port,
-        database=conn.database,
+        databases=_databases(conn),
         created_at=conn.created_at,
         updated_at=conn.updated_at,
     )
@@ -165,16 +184,27 @@ def to_full(conn: SavedConnection) -> SavedConnectionFull:
         password=decrypt_password(conn.password),
         host=conn.host,
         port=conn.port,
-        database=conn.database,
+        databases=_databases(conn),
         created_at=conn.created_at,
         updated_at=conn.updated_at,
     )
 
 
-def to_config(conn: SavedConnection, query: str) -> ConnectionConfig:
+def _databases(conn: SavedConnection) -> list[str]:
+    """Parse the stored JSON-text database list (empty if unset/corrupt)."""
+    if not conn.databases:
+        return []
+    try:
+        return json.loads(conn.databases)
+    except (ValueError, TypeError):
+        return []
+
+
+def to_config(conn: SavedConnection, query: str, database: str) -> ConnectionConfig:
     """Build a runtime ConnectionConfig from a preset (decrypts the password).
 
-    The SQL ``query`` is supplied at run time — it is not stored with the preset.
+    The SQL ``query`` and the target ``database`` are both supplied at run time —
+    neither is stored with the preset.
     """
     return ConnectionConfig(
         dialect=conn.dialect,
@@ -182,6 +212,28 @@ def to_config(conn: SavedConnection, query: str) -> ConnectionConfig:
         password=decrypt_password(conn.password),
         host=conn.host,
         port=conn.port,
-        database=conn.database,
+        database=database,
         query=query,
     )
+
+
+def refresh_databases(conn_id: int) -> "SavedConnection | None":
+    """Re-enumerate a preset's server databases and store the list.
+
+    Returns the updated preset, or None if it does not exist. Connection or
+    credential failures are swallowed and recorded as an empty list, so a
+    temporarily unreachable server never breaks saving.
+    """
+    with get_session() as session:
+        conn = session.get(SavedConnection, conn_id)
+        if conn is None:
+            return None
+        try:
+            cfg = to_config(conn, "", "")
+            names = list_databases(cfg)
+        except Exception:  # noqa: BLE001 - record failure as an empty list
+            names = []
+        conn.databases = json.dumps(names)
+        session.commit()
+        session.refresh(conn)
+        return conn

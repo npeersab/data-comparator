@@ -17,6 +17,7 @@ from .connections import (
     to_public,
     to_full,
     to_config,
+    refresh_databases,
 )
 from .db import SUPPORTED_DIALECTS
 from .schemas import (
@@ -67,7 +68,10 @@ async def get_saved_connection(conn_id: int):
 async def save_connection(data: SavedConnectionIn):
     if not data.name.strip():
         raise HTTPException(status_code=400, detail="Name is required")
-    return to_public(upsert_connection(data))
+    conn = upsert_connection(data)
+    # Enumerate the server's databases now so the compare page can reuse them.
+    conn = refresh_databases(conn.id) or conn
+    return to_public(conn)
 
 
 @app.put("/api/connections/{conn_id}", response_model=SavedConnectionOut)
@@ -78,6 +82,16 @@ async def update_saved_connection(conn_id: int, data: SavedConnectionIn):
         conn = update_connection(conn_id, data)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc))
+    if conn is None:
+        raise HTTPException(status_code=404, detail="Connection not found")
+    conn = refresh_databases(conn_id) or conn
+    return to_public(conn)
+
+
+@app.post("/api/connections/{conn_id}/databases/refresh")
+async def refresh_connection_databases(conn_id: int):
+    """Re-enumerate a preset's databases and store the list (admin refresh button)."""
+    conn = refresh_databases(conn_id)
     if conn is None:
         raise HTTPException(status_code=404, detail="Connection not found")
     return to_public(conn)
@@ -122,8 +136,8 @@ async def compare_saved(req: SavedCompareRequest):
     # Resolve (and 404) before the streaming response starts, so a missing id
     # is reported as a real 404 rather than an error mid-stream. The SQL query
     # for each side is supplied at run time, not stored with the preset.
-    source_cfg = to_config(_resolve(req.source_id), req.source_query)
-    target_cfg = to_config(_resolve(req.target_id), req.target_query)
+    source_cfg = to_config(_resolve(req.source_id), req.source_query, req.source_database)
+    target_cfg = to_config(_resolve(req.target_id), req.target_query, req.target_database)
 
     def event_gen():
         yield from compare_events(source_cfg, target_cfg, req.max_mismatch_size)

@@ -6,12 +6,12 @@ from pydantic import BaseModel, Field
 class ConnectionConfig(BaseModel):
     """Connection + query for one side of the comparison."""
 
-    dialect: str  # postgresql, mysql, mariadb, sqlite
+    dialect: str  # postgresql, mysql, mariadb
     username: str = ""
     password: str = ""
     host: str = "localhost"
     port: int | None = None
-    database: str  # for sqlite this is the file path
+    database: str  # database to query (chosen at compare time)
     query: str
 
 
@@ -31,8 +31,10 @@ class SavedCompareRequest(BaseModel):
 
     source_id: int
     source_query: str
+    source_database: str
     target_id: int
     target_query: str
+    target_database: str
     max_mismatch_size: int = Field(default=100, ge=1)
 
 
@@ -42,7 +44,11 @@ class SavedCompareRequest(BaseModel):
 
 
 class SavedConnectionIn(BaseModel):
-    """Create/update payload. `password` is plaintext here and is encrypted on storage."""
+    """Create/update payload. `password` is plaintext here and is encrypted on storage.
+
+    The enumerated ``databases`` list is server-populated (never sent by the
+    client); it is refreshed from the server after saving.
+    """
 
     name: str
     dialect: str
@@ -50,7 +56,6 @@ class SavedConnectionIn(BaseModel):
     password: str = ""
     host: str = "localhost"
     port: int | None = None
-    database: str
 
 
 class SavedConnectionOut(BaseModel):
@@ -62,7 +67,7 @@ class SavedConnectionOut(BaseModel):
     username: str
     host: str
     port: int | None
-    database: str
+    databases: list[str] = []
     created_at: datetime
     updated_at: datetime
 
@@ -77,6 +82,6 @@ class SavedConnectionFull(BaseModel):
     password: str
     host: str
     port: int | None
-    database: str
+    databases: list[str] = []
     created_at: datetime
     updated_at: datetime
