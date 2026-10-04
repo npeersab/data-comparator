@@ -20,7 +20,6 @@ const els = {
   save: document.getElementById("f-save"),
   test: document.getElementById("f-test"),
   modalStatus: document.getElementById("f-status"),
-  clear: document.getElementById("f-clear"),
   title: document.getElementById("modal-title"),
   modal: document.getElementById("conn-modal"),
   panel: document.getElementById("modal-panel"),
@@ -145,8 +144,6 @@ els.form.addEventListener("submit", (e) => {
     })
     .catch((err) => setStatus(err.message || String(err), "error"));
 });
-
-els.clear.addEventListener("click", closeModal);
 
 // Show a result banner inside the modal (the opaque backdrop hides the
 // page-level status). kind is "success" or "error".
