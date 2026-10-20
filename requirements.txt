@@ -1,7 +1,7 @@
-fastapi==0.143.0
+fastapi==0.151.0
 uvicorn[standard]==0.54.0
-sqlalchemy==2.1.4
-pydantic==2.14.0
+sqlalchemy==2.1.5
+pydantic==2.14.1
 # `sortedlist` is not published on PyPI; a compatible implementation is vendored
 # at app/sortedlist.py (used by app/comparator.py). No install needed.
 psycopg2-binary==2.9.13
