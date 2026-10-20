@@ -153,9 +153,14 @@ Lightweight test scripts (run with any Python that has the deps installed):
 python3 smoke_test.py     # end-to-end: PostgreSQL -> SSE comparison -> assertions
 python3 test_app.py       # FastAPI TestClient: homepage, dialects, SSE streaming
 python3 test_connections.py  # CRUD + encryption, incl. /api/compare/saved
+python3 test_all_dialects.py   # PostgreSQL + MySQL + MariaDB diff (needs live servers)
 ```
 
 `smoke_test.py` also doubles as a usage example for `compare.compare_events`.
+The comparison tests need a **live PostgreSQL** on localhost (`tc/tcpass`, db `tcdb`,
+e.g. `docker run -d --name dc-postgres -e POSTGRES_USER=tc -e POSTGRES_PASSWORD=tcpass \
+-e POSTGRES_DB=tcdb -p 5432:5432 postgres:15`); `test_all_dialects.py` additionally needs
+a **live MariaDB** mapped to a host port.
 
 ## Notes / limitations
 - **Comparator corrected**: the reference `comparator.py` from the linked repo has

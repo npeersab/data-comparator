@@ -19,6 +19,9 @@ databases, using one user-supplied SQL query per side. Setup/run is in `README.m
   - `python3 test_all_dialects.py` — per-dialect integration test (postgresql,
     mysql, mariadb; **no sqlite**); needs **live servers** (e.g. also
     `docker run` `mariadb:11` mapped to a host port) plus `psycopg2`/`pymysql`.
+- **No linter, formatter, typecheck, CI, or lockfile** — none configured.
+   `requirements.txt` pins versions but there is no lockfile and nothing to
+   regenerate. `data/` (the connections DB + `encryption.key`) is git-ignored.
 
 ## Gotchas (read before editing — easy to get wrong)
 - **`app/comparator.py` is corrected, not verbatim.** Adapted from
@@ -83,9 +86,9 @@ databases, using one user-supplied SQL query per side. Setup/run is in `README.m
 ## UI (static/)
 - The whole frontend is plain HTML/CSS/JS in `static/` (`index.html`, `app.js`,
   `style.css`): **no build step, no framework, no CDN**. Don't introduce one.
-- Styled to match the shadcn/ui look of
-  `/home/noor/programs/dependency-manager` (same light/dark tokens, cards,
-  buttons, header, theme toggle). Match that look when changing the UI.
+- Styled after shadcn/ui (light + dark semantic tokens, cards, buttons, input,
+  badge, table, header, 0.5rem radius — see `static/style.css`): no build step,
+  no CDN, fully self-contained. Match that look when changing the UI.
 - `app.js` uses `fetch` + `ReadableStream`, **not** `EventSource` — it must POST
   the request body and still read SSE. `EventSource` can't POST a body.
 - The page is driven by element IDs in `index.html`; keep those stable when editing
